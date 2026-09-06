@@ -1,7 +1,12 @@
 from fastapi import APIRouter, Depends
 
 from ..db import service_update, service_upsert
-from ..schemas import AdminHandMatch, AdminSprintStatus
+from ..schemas import (
+    AdminHandMatch,
+    AdminResolveReport,
+    AdminSprintStatus,
+    AdminSuspend,
+)
 from ..security import CurrentUser, require_admin
 
 router = APIRouter(prefix="/admin")
@@ -36,6 +41,30 @@ async def set_sprint_status(
     await service_update(
         "sprints",
         params={"id": f"eq.{body.sprintId}"},
+        patch={"status": body.status},
+    )
+    return {"success": True}
+
+
+@router.post("/suspend")
+async def suspend_member(body: AdminSuspend, _: CurrentUser = Depends(require_admin)):
+    """Suspend or reinstate a member. A suspended member's needs drop out of the
+    feed (enforced in the sprints SELECT policy) and their writes are refused."""
+    await service_update(
+        "profiles",
+        params={"id": f"eq.{body.userId}"},
+        patch={"suspended": body.suspended},
+    )
+    return {"success": True}
+
+
+@router.post("/resolve-report")
+async def resolve_report(
+    body: AdminResolveReport, _: CurrentUser = Depends(require_admin)
+):
+    await service_update(
+        "reports",
+        params={"id": f"eq.{body.reportId}"},
         patch={"status": body.status},
     )
     return {"success": True}

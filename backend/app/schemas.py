@@ -131,3 +131,67 @@ class AdminHandMatch(BaseModel):
 class AdminSprintStatus(BaseModel):
     sprintId: str
     status: Literal["open", "claimed", "in_progress", "completed", "cancelled"]
+
+
+# ── Trust & safety ──────────────────────────────────────────────────────────
+
+ReportReason = Literal["spam", "harassment", "scam", "inappropriate", "safety", "other"]
+ReportStatus = Literal["open", "reviewing", "actioned", "dismissed"]
+
+
+class VouchInput(BaseModel):
+    """Vouch for a member you've actually connected with."""
+
+    voucheeId: str
+    note: str | None = Field(default=None, max_length=280)
+
+
+class UnvouchInput(BaseModel):
+    voucheeId: str
+
+
+class ReportInput(BaseModel):
+    """Flag a member and/or a specific need. At least one target is required."""
+
+    reportedUserId: str | None = None
+    sprintId: str | None = None
+    reason: ReportReason
+    detail: str | None = Field(default=None, max_length=1000)
+
+    @model_validator(mode="after")
+    def _require_a_target(self) -> "ReportInput":
+        if not (self.reportedUserId or self.sprintId):
+            raise ValueError("A report must reference a member or a need")
+        return self
+
+
+class BlockInput(BaseModel):
+    blockedId: str
+
+
+class AdminSuspend(BaseModel):
+    userId: str
+    suspended: bool
+
+
+class AdminResolveReport(BaseModel):
+    reportId: str
+    status: ReportStatus
+
+
+# ── Web push ────────────────────────────────────────────────────────────────
+
+class PushKeys(BaseModel):
+    p256dh: str
+    auth: str
+
+
+class PushSubscribe(BaseModel):
+    """The browser PushSubscription, as returned by pushManager.subscribe()."""
+
+    endpoint: str = Field(max_length=2000)
+    keys: PushKeys
+
+
+class PushUnsubscribe(BaseModel):
+    endpoint: str = Field(max_length=2000)

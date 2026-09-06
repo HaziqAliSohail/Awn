@@ -13,7 +13,16 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from .routers import admin, handshake, match, preview, profiles, sprints
+from .routers import (
+    admin,
+    handshake,
+    match,
+    notifications,
+    preview,
+    profiles,
+    sprints,
+    trust,
+)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -74,5 +83,7 @@ app.include_router(sprints.router, tags=["sprints"])
 app.include_router(match.router, tags=["match"])
 app.include_router(handshake.router, tags=["handshake"])
 app.include_router(profiles.router, tags=["profiles"])
+app.include_router(trust.router, tags=["trust"])
+app.include_router(notifications.router, tags=["notifications"])
 # Admin (concierge)
 app.include_router(admin.router, tags=["admin"])

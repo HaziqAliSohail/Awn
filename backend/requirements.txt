@@ -10,6 +10,9 @@ anthropic==1.4.0
 python-multipart==0.0.32
 pydantic==2.13.5
 pydantic-settings==2.15.0
+# Notifications: async SMTP for email, VAPID web push.
+aiosmtplib==3.0.2
+pywebpush==2.0.3
 
 # Optional production speedups (Linux/Docker only — add if desired):
 #   uvicorn[standard]==0.52.4

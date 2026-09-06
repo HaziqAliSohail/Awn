@@ -3,6 +3,15 @@ node_modules/
 .pnp
 .pnp.js
 
+# Python (backend)
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
 # Next.js
 .next/
 out/

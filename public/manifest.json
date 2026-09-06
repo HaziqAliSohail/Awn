@@ -1,0 +1,13 @@
+{
+  "name": "Awn — Muslim community mutual aid",
+  "short_name": "Awn",
+  "description": "Ask for help or offer your skills to the ummah, purely for the sake of Allah.",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6f7f5",
+  "theme_color": "#0d5c46",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

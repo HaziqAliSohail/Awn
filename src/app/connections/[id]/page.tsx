@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { AppNav } from "@/components/app/AppNav";
 import { Chat } from "./chat";
 import { CompletePanel } from "./complete-panel";
+import { MemberActions } from "@/components/trust/member-actions";
 
 export const metadata = { title: "Chat" };
 
@@ -26,7 +27,13 @@ export default async function ConnectionChatPage({ params }: { params: { id: str
 
   const sprint = hs.sprint as unknown as { id: string; title: string; creator_id: string };
   const otherId = hs.contributor_id === user.id ? sprint.creator_id : hs.contributor_id;
-  const { data: other } = await supabase.from("profiles").select("full_name, headline").eq("id", otherId).maybeSingle();
+  const [{ data: other }, vouchCountRes, myVouchRes, myBlockRes] = await Promise.all([
+    supabase.from("profiles").select("full_name, headline").eq("id", otherId).maybeSingle(),
+    supabase.from("vouches").select("id", { count: "exact", head: true }).eq("vouchee_id", otherId),
+    supabase.from("vouches").select("voucher_id").eq("voucher_id", user.id).eq("vouchee_id", otherId).maybeSingle(),
+    supabase.from("blocks").select("blocked_id").eq("blocker_id", user.id).eq("blocked_id", otherId).maybeSingle(),
+  ]);
+  const otherName = other?.full_name ?? "A member";
 
   return (
     <>
@@ -37,11 +44,18 @@ export default async function ConnectionChatPage({ params }: { params: { id: str
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           </Link>
           <div className="min-w-0 flex-1">
-            <p className="truncate font-semibold text-surface-900">{other?.full_name ?? "A member"}</p>
+            <p className="truncate font-semibold text-surface-900">{otherName}</p>
             <Link href={`/sprints/${sprint.id}`} className="block truncate text-xs text-surface-500 hover:text-surface-800">
               {sprint.title}
             </Link>
           </div>
+          <MemberActions
+            otherId={otherId}
+            otherName={otherName}
+            initialVouched={!!myVouchRes.data}
+            initialVouchCount={vouchCountRes.count ?? 0}
+            initialBlocked={!!myBlockRes.data}
+          />
           <CompletePanel
             handshakeId={hs.id}
             meId={user.id}
@@ -49,7 +63,7 @@ export default async function ConnectionChatPage({ params }: { params: { id: str
             status={hs.status as string}
           />
         </div>
-        <Chat handshakeId={hs.id} meId={user.id} otherName={other?.full_name ?? "A member"} />
+        <Chat handshakeId={hs.id} meId={user.id} otherName={otherName} />
       </main>
     </>
   );

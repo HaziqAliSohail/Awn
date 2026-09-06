@@ -2,11 +2,12 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from ..db import consume_rate_limit, user_insert, user_select_one
+from ..db import consume_rate_limit, is_suspended, user_insert, user_select_one
 from ..ai_service import (
     build_embedding_input,
     generate_embedding,
     scope_sprint,
+    screen_content,
     to_pgvector,
 )
 from ..sanitizer import sanitize_raw_text
@@ -23,6 +24,9 @@ async def scope_sprint_endpoint(
 ):
     """AUTH: sanitize → scope → embed → persist a sprint owned by the caller.
     Insert runs under the user's JWT so RLS enforces creator_id = auth.uid()."""
+    if await is_suspended(user.id):
+        raise HTTPException(status_code=403, detail="Your account is suspended.")
+
     if not await consume_rate_limit(f"scope:{user.id}", 15, 86_400):
         raise HTTPException(
             status_code=429,
@@ -30,6 +34,17 @@ async def scope_sprint_endpoint(
         )
 
     sanitized = sanitize_raw_text(body.rawText)
+
+    # Automated safety screen before anything is persisted. Fails open, so a
+    # model outage never blocks legitimate help; only clear abuse is refused,
+    # while borderline posts are created and flagged for the admin queue.
+    verdict, screen_reason = await screen_content(sanitized)
+    if verdict == "reject":
+        raise HTTPException(
+            status_code=422,
+            detail="This request can't be posted. If you think that's a mistake, please reword it or reach out to us.",
+        )
+    flagged = verdict == "review"
 
     is_org = body.requesterKind == "organization"
     if is_org:
@@ -72,6 +87,8 @@ async def scope_sprint_endpoint(
             "required_gender": body.requiredGender,
             "languages_needed": body.languagesNeeded,
             "city": body.city,
+            "flagged": flagged,
+            "flag_reason": screen_reason if flagged else None,
         },
     )
 

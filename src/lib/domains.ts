@@ -57,6 +57,27 @@ export const SPRINT_STATUS: Record<string, { label: string; className: string }>
   cancelled: { label: "Closed", className: "bg-red-50 text-red-600 border-red-200" },
 };
 
+// Report reasons — order shown in the report dialog.
+export const REPORT_REASONS: { value: string; label: string }[] = [
+  { value: "scam", label: "Scam or asking for money" },
+  { value: "harassment", label: "Harassment or abuse" },
+  { value: "inappropriate", label: "Inappropriate content" },
+  { value: "safety", label: "Safety concern" },
+  { value: "spam", label: "Spam or advertising" },
+  { value: "other", label: "Something else" },
+];
+
+export const REPORT_REASON_LABEL: Record<string, string> = Object.fromEntries(
+  REPORT_REASONS.map((r) => [r.value, r.label])
+);
+
+export const REPORT_STATUS: Record<string, { label: string; className: string }> = {
+  open: { label: "Open", className: "bg-amber-50 text-amber-700 border-amber-200" },
+  reviewing: { label: "Reviewing", className: "bg-blue-50 text-blue-700 border-blue-200" },
+  actioned: { label: "Actioned", className: "bg-brand-50 text-brand-700 border-brand-200" },
+  dismissed: { label: "Dismissed", className: "bg-surface-100 text-surface-500 border-surface-200" },
+};
+
 export const CONNECTION_STATUS: Record<string, { label: string; className: string }> = {
   invited: { label: "Invited, awaiting their reply", className: "bg-amber-50 text-amber-700 border-amber-200" },
   matched: { label: "Offer, awaiting your reply", className: "bg-amber-50 text-amber-700 border-amber-200" },

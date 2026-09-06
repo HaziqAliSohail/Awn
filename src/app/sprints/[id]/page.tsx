@@ -7,6 +7,7 @@ import { AppNav } from "@/components/app/AppNav";
 import { domainLabel, SPRINT_STATUS } from "@/lib/domains";
 import { MatchPanel } from "./match-panel";
 import { ClaimPanel } from "./claim-panel";
+import { ReportButton } from "@/components/trust/report-dialog";
 
 export default async function SprintDetailPage({ params }: { params: { id: string } }) {
   const user = await getUser();
@@ -107,6 +108,12 @@ export default async function SprintDetailPage({ params }: { params: { id: strin
             />
           )}
         </div>
+
+        {!isOwner ? (
+          <div className="mt-6 flex justify-center">
+            <ReportButton sprintId={s.id} targetLabel="this request" />
+          </div>
+        ) : null}
       </main>
     </>
   );

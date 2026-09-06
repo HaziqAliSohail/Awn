@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LayoutDashboard, HandHeart, MessagesSquare, ShieldCheck, LogOut } from "lucide-react";
+import { NotificationBell } from "@/components/app/NotificationBell";
 
 interface AppNavProps {
   email: string;
@@ -52,7 +53,8 @@ export function AppNav({ email, isAdmin, active }: AppNavProps) {
           </nav>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <NotificationBell />
           <span className="hidden max-w-[14rem] truncate text-sm text-surface-500 md:inline" title={email}>
             {email}
           </span>

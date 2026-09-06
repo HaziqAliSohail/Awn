@@ -103,6 +103,12 @@ async def user_update(
     _raise_for_status(resp, f"update {table}")
 
 
+async def user_delete(table: str, token: str, *, params: dict[str, Any]) -> None:
+    headers = {**_user_headers(token), "Prefer": "return=minimal"}
+    resp = await _request("DELETE", _rest_url(table), headers, params=params)
+    _raise_for_status(resp, f"delete {table}")
+
+
 # ── service-scoped (RLS bypassed — guard every caller) ─────────────────────
 
 async def service_select_one(
@@ -112,6 +118,18 @@ async def service_select_one(
     _raise_for_status(resp, f"select {table}")
     rows = resp.json()
     return rows[0] if rows else None
+
+
+async def service_select(table: str, *, params: dict[str, Any]) -> list[dict[str, Any]]:
+    resp = await _request("GET", _rest_url(table), _service_headers(), params=params)
+    _raise_for_status(resp, f"select {table}")
+    return resp.json()
+
+
+async def service_delete(table: str, *, params: dict[str, Any]) -> None:
+    headers = {**_service_headers(), "Prefer": "return=minimal"}
+    resp = await _request("DELETE", _rest_url(table), headers, params=params)
+    _raise_for_status(resp, f"delete {table}")
 
 
 async def service_insert(table: str, row: dict[str, Any]) -> dict[str, Any]:
@@ -142,6 +160,17 @@ async def service_rpc(fn: str, payload: dict[str, Any]) -> Any:
     resp = await _request("POST", _rpc_url(fn), _service_headers(), json=payload)
     _raise_for_status(resp, f"rpc {fn}")
     return resp.json()
+
+
+# ── moderation ─────────────────────────────────────────────────────────────
+
+async def is_suspended(user_id: str) -> bool:
+    """Whether a member has been suspended by an admin. Service-role read so it
+    holds even where the caller couldn't see the flag themselves."""
+    row = await service_select_one(
+        "profiles", params={"id": f"eq.{user_id}", "select": "suspended"}
+    )
+    return bool(row and row.get("suspended"))
 
 
 # ── rate limiting (durable, via migration 008) ─────────────────────────────
