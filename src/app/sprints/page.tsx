@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { Plus, HandHeart, Clock, Users, MapPin } from "lucide-react";
+import { Plus, HandHeart, Clock, Users, MapPin, Sparkles, Hourglass } from "lucide-react";
 import { isAdminEmail } from "@/lib/auth";
 import { requireProfile } from "@/lib/require-profile";
 import { AppNav } from "@/components/app/AppNav";
-import { domainLabel, SPRINT_STATUS } from "@/lib/domains";
+import { CATEGORIES, domainLabel, SPRINT_STATUS } from "@/lib/domains";
+import { timeAgo } from "@/lib/notifications";
 
 export const metadata = { title: "Needs" };
 
@@ -17,17 +18,26 @@ interface Row {
   status: string;
   city: string | null;
   required_gender: string | null;
+  created_at: string;
 }
 
+type ProfileBits = {
+  city: string | null;
+  can_help_with: string[] | null;
+  have_helped_with: string[] | null;
+};
+
 const SELECT =
-  "id, title, domain, estimated_hours, org_name, requester_kind, status, city, required_gender";
+  "id, title, domain, estimated_hours, org_name, requester_kind, status, city, required_gender, created_at";
 
 export default async function SprintsPage({
   searchParams,
 }: {
-  searchParams: { mine?: string; scope?: string };
+  searchParams: { mine?: string; scope?: string; fit?: string; cat?: string };
 }) {
-  const { user, supabase, profile } = await requireProfile<{ city: string | null }>("city");
+  const { user, supabase, profile } = await requireProfile<ProfileBits>(
+    "city, can_help_with, have_helped_with"
+  );
 
   const mine = searchParams.mine === "1";
   const city = (profile.city ?? "").trim();
@@ -35,6 +45,23 @@ export default async function SprintsPage({
   // On the "help others" view, default to the viewer's town when they have one;
   // ?scope=all shows every open request.
   const townOnly = !mine && hasCity && searchParams.scope !== "all";
+
+  // What this member can help with — the union of "can help" and "have done".
+  const helpDomains = Array.from(
+    new Set([...(profile.can_help_with ?? []), ...(profile.have_helped_with ?? [])])
+  );
+  const fit = !mine && searchParams.fit === "1" && helpDomains.length > 0;
+  // Validate the category param against the known list so it can't inject.
+  const cat = !mine ? CATEGORIES.find((c) => c.value === searchParams.cat)?.value : undefined;
+
+  // Preserve the active filters when building each chip's link.
+  const current = { scope: searchParams.scope, fit: searchParams.fit, cat: searchParams.cat };
+  const hrefWith = (over: Record<string, string | undefined>) => {
+    const p = new URLSearchParams();
+    for (const [k, v] of Object.entries({ ...current, ...over })) if (v) p.set(k, v);
+    const qs = p.toString();
+    return qs ? `/sprints?${qs}` : "/sprints";
+  };
 
   let rows: Row[] = [];
   if (mine) {
@@ -54,16 +81,26 @@ export default async function SprintsPage({
       .order("created_at", { ascending: false })
       .limit(60);
     if (townOnly) q = q.ilike("city", city); // case-insensitive exact city match
+    if (fit) q = q.in("domain", helpDomains); // only categories I can help with
+    if (cat) q = q.eq("domain", cat); // a single chosen category
     const { data } = await q;
     rows = (data ?? []) as Row[];
   }
 
+  const filtered = fit || !!cat;
   const heading = mine ? "My requests" : "Where you can help";
   const subtitle = mine
     ? "Requests you've posted, with their status."
     : townOnly
     ? `Open requests in ${city}. Offer your help for the sake of Allah.`
     : "Open requests from the community. Offer your help for the sake of Allah.";
+
+  const chip = (active: boolean) =>
+    `rounded-full border px-3 py-1 text-sm transition-colors ${
+      active
+        ? "border-primary bg-primary text-white"
+        : "border-surface-300 bg-white text-surface-700 hover:border-primary"
+    }`;
 
   return (
     <>
@@ -89,34 +126,59 @@ export default async function SprintsPage({
           </div>
         </div>
 
-        {/* City filter — only on the "help others" view */}
+        {/* Filters — only on the "help others" view */}
         {!mine ? (
-          hasCity ? (
-            <div className="mt-5 flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-surface-500">
-                <MapPin className="h-4 w-4" aria-hidden="true" /> Location
-              </span>
-              <Link href="/sprints" aria-current={townOnly ? "page" : undefined}
-                className={`rounded-full border px-3 py-1 text-sm transition-colors ${
-                  townOnly ? "border-primary bg-primary text-white" : "border-surface-300 bg-white text-surface-700 hover:border-primary"
-                }`}>
-                {city}
-              </Link>
-              <Link href="/sprints?scope=all" aria-current={!townOnly ? "page" : undefined}
-                className={`rounded-full border px-3 py-1 text-sm transition-colors ${
-                  !townOnly ? "border-primary bg-primary text-white" : "border-surface-300 bg-white text-surface-700 hover:border-primary"
-                }`}>
-                Everywhere
-              </Link>
+          <div className="mt-5 space-y-3">
+            {/* Location + skills row */}
+            <div className="flex flex-wrap items-center gap-2">
+              {hasCity ? (
+                <>
+                  <span className="inline-flex items-center gap-1.5 text-sm font-medium text-surface-500">
+                    <MapPin className="h-4 w-4" aria-hidden="true" /> Location
+                  </span>
+                  <Link href={hrefWith({ scope: undefined })} aria-current={townOnly ? "page" : undefined} className={chip(townOnly)}>
+                    {city}
+                  </Link>
+                  <Link href={hrefWith({ scope: "all" })} aria-current={!townOnly ? "page" : undefined} className={chip(!townOnly)}>
+                    Everywhere
+                  </Link>
+                  <span className="mx-1 h-4 w-px bg-surface-200" aria-hidden="true" />
+                </>
+              ) : null}
+
+              {helpDomains.length > 0 ? (
+                <Link
+                  href={hrefWith({ fit: fit ? undefined : "1", cat: undefined })}
+                  aria-pressed={fit}
+                  className={`inline-flex items-center gap-1.5 ${chip(fit)}`}
+                  title="Show only categories you can help with"
+                >
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden="true" /> Matches my skills
+                </Link>
+              ) : (
+                <Link href="/onboarding" className="inline-flex items-center gap-1.5 text-sm text-surface-500 hover:text-primary">
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden="true" /> Set what you can help with →
+                </Link>
+              )}
             </div>
-          ) : (
-            <div className="mt-5 flex items-center gap-2 rounded-xl border border-surface-200 bg-surface-50 px-4 py-3 text-sm text-surface-600">
-              <MapPin className="h-4 w-4 shrink-0 text-surface-400" aria-hidden="true" />
-              <span>
-                Add your city in your <Link href="/onboarding" className="font-medium text-primary underline">profile</Link> to see requests from your town.
-              </span>
+
+            {/* Category row — horizontally scrollable so it never wraps the page */}
+            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+              <Link href={hrefWith({ cat: undefined })} aria-current={!cat ? "page" : undefined} className={`shrink-0 ${chip(!cat)}`}>
+                All categories
+              </Link>
+              {CATEGORIES.map((c) => (
+                <Link
+                  key={c.value}
+                  href={hrefWith({ cat: c.value, fit: undefined })}
+                  aria-current={cat === c.value ? "page" : undefined}
+                  className={`shrink-0 whitespace-nowrap ${chip(cat === c.value)}`}
+                >
+                  <span aria-hidden="true">{c.emoji}</span> {c.label}
+                </Link>
+              ))}
             </div>
-          )
+          </div>
         ) : null}
 
         {rows.length === 0 ? (
@@ -125,6 +187,8 @@ export default async function SprintsPage({
             <p className="mt-3 font-semibold text-surface-700">
               {mine
                 ? "You haven't asked for anything yet"
+                : filtered
+                ? "No open requests match these filters"
                 : townOnly
                 ? `No open requests in ${city}`
                 : "No open requests right now"}
@@ -132,11 +196,17 @@ export default async function SprintsPage({
             <p className="mt-1 text-sm text-surface-500">
               {mine
                 ? "Post your first request and we'll shape it in seconds."
+                : filtered
+                ? "Try clearing a filter, or browse all categories."
                 : townOnly
                 ? "Try browsing Everywhere, or check back soon in shā’ Allāh."
                 : "Check back soon, in shā’ Allāh. New requests appear here."}
             </p>
-            {mine ? <Link href="/sprints/new" className="btn-primary mt-5 text-sm"><Plus className="h-4 w-4" aria-hidden="true" /> Ask for help</Link> : null}
+            {mine ? (
+              <Link href="/sprints/new" className="btn-primary mt-5 text-sm"><Plus className="h-4 w-4" aria-hidden="true" /> Ask for help</Link>
+            ) : filtered ? (
+              <Link href="/sprints" className="btn-outline mt-5 text-sm">Clear filters</Link>
+            ) : null}
           </div>
         ) : (
           <ul className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" role="list">
@@ -157,8 +227,9 @@ export default async function SprintsPage({
                         {s.title}
                       </h2>
                       <div className="mt-3 flex flex-wrap items-center gap-3 font-mono text-xs text-surface-400">
-                        {s.estimated_hours ? <span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" aria-hidden="true" />{s.estimated_hours}h</span> : null}
+                        <span className="inline-flex items-center gap-1" title="When it was posted"><Clock className="h-3.5 w-3.5" aria-hidden="true" />{timeAgo(s.created_at)}</span>
                         {s.city ? <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" aria-hidden="true" />{s.city}</span> : null}
+                        {s.estimated_hours ? <span className="inline-flex items-center gap-1" title="Estimated effort to help"><Hourglass className="h-3 w-3" aria-hidden="true" />~{s.estimated_hours}h</span> : null}
                         {s.required_gender ? <span className="text-brand-600">· {s.required_gender === "female" ? "Sisters only" : "Brothers only"}</span> : null}
                       </div>
                     </article>

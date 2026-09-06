@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Send } from "lucide-react";
+import { Send, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -17,7 +17,18 @@ interface Msg {
  * RLS-protected `messages` table; postgres_changes delivery is RLS-scoped, so
  * only the two participants of this accepted connection receive messages.
  */
-export function Chat({ handshakeId, meId, otherName }: { handshakeId: string; meId: string; otherName: string }) {
+export function Chat({
+  handshakeId,
+  meId,
+  otherName,
+  closed = false,
+}: {
+  handshakeId: string;
+  meId: string;
+  otherName: string;
+  /** When the connection is completed, history stays readable but sending is closed. */
+  closed?: boolean;
+}) {
   const supabase = useMemo(() => createClient(), []);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [text, setText] = useState("");
@@ -96,24 +107,31 @@ export function Chat({ handshakeId, meId, otherName }: { handshakeId: string; me
         <div ref={bottomRef} />
       </div>
 
-      <form onSubmit={send} className="flex items-center gap-2 border-t border-surface-200 pt-3">
-        <label htmlFor="msg" className="sr-only">Message</label>
-        <input
-          id="msg"
-          value={text}
-          onChange={(e) => setText(e.target.value.slice(0, 4000))}
-          placeholder="Write a message…"
-          className="h-11 flex-1 rounded-xl border border-surface-300 bg-white px-3.5 text-sm text-surface-900 placeholder:text-surface-400 focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-primary"
-        />
-        <button
-          type="submit"
-          disabled={!text.trim() || sending}
-          className="btn-primary h-11 w-11 !px-0"
-          aria-label="Send message"
-        >
-          <Send className="h-4 w-4" aria-hidden="true" />
-        </button>
-      </form>
+      {closed ? (
+        <div className="flex items-center justify-center gap-2 border-t border-surface-200 pt-3 text-sm text-surface-500">
+          <CheckCircle2 className="h-4 w-4 text-brand-600" aria-hidden="true" />
+          This help is complete — the chat is now closed. Jazāk Allāhu khayran.
+        </div>
+      ) : (
+        <form onSubmit={send} className="flex items-center gap-2 border-t border-surface-200 pt-3">
+          <label htmlFor="msg" className="sr-only">Message</label>
+          <input
+            id="msg"
+            value={text}
+            onChange={(e) => setText(e.target.value.slice(0, 4000))}
+            placeholder="Write a message…"
+            className="h-11 flex-1 rounded-xl border border-surface-300 bg-white px-3.5 text-sm text-surface-900 placeholder:text-surface-400 focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-primary"
+          />
+          <button
+            type="submit"
+            disabled={!text.trim() || sending}
+            className="btn-primary h-11 w-11 !px-0"
+            aria-label="Send message"
+          >
+            <Send className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </form>
+      )}
     </>
   );
 }

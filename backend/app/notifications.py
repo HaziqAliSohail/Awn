@@ -95,9 +95,44 @@ def _email_html(title: str, body: str | None, url: str) -> str:
 
 
 async def _send_email(to: str, subject: str, html: str) -> None:
+    """Dispatch to whichever transport is configured. Brevo (HTTPS) wins over
+    SMTP because many hosts block outbound SMTP ports; SMTP stays as the
+    local-dev fallback. Best-effort — failures are logged, never raised."""
     s = get_settings()
-    if not s.email_enabled:
-        return
+    if s.brevo_api_key:
+        await _send_email_brevo(to, subject, html)
+    elif s.smtp_user and s.smtp_password:
+        await _send_email_smtp(to, subject, html)
+
+
+async def _send_email_brevo(to: str, subject: str, html: str) -> None:
+    s = get_settings()
+    payload = {
+        "sender": {"name": s.smtp_from_name or "Awn", "email": s.from_email},
+        "to": [{"email": to}],
+        "subject": subject,
+        "htmlContent": html,
+        "textContent": f"{subject}\n\nOpen Awn to see more.",
+    }
+    try:
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            resp = await client.post(
+                "https://api.brevo.com/v3/smtp/email",
+                headers={
+                    "api-key": s.brevo_api_key,
+                    "content-type": "application/json",
+                    "accept": "application/json",
+                },
+                json=payload,
+            )
+        if resp.status_code >= 400:
+            logger.warning("brevo send to %s failed: %s %s", to, resp.status_code, resp.text[:300])
+    except Exception as e:
+        logger.warning("brevo send to %s errored: %s", to, e)
+
+
+async def _send_email_smtp(to: str, subject: str, html: str) -> None:
+    s = get_settings()
     import aiosmtplib
     from email.message import EmailMessage
 

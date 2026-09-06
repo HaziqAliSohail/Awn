@@ -63,7 +63,7 @@ export default async function ConnectionChatPage({ params }: { params: { id: str
             status={hs.status as string}
           />
         </div>
-        <Chat handshakeId={hs.id} meId={user.id} otherName={otherName} />
+        <Chat handshakeId={hs.id} meId={user.id} otherName={otherName} closed={hs.status === "completed"} />
       </main>
     </>
   );

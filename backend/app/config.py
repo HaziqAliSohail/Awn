@@ -31,13 +31,17 @@ class Settings(BaseSettings):
     # emails/pushes (falls back to the first configured origin).
     app_url: str = ""
 
-    # ── Email notifications (Gmail SMTP; leave blank to disable email) ──────
-    # Reuses the same Gmail account/app-password configured for Supabase auth.
+    # ── Email notifications ─────────────────────────────────────────────────
+    # Two transports. Brevo (HTTPS API) is preferred in production because many
+    # hosts (Render, etc.) block outbound SMTP ports — HTTPS is never blocked.
+    # SMTP (Gmail) is kept as a local-dev fallback. Whichever is configured wins;
+    # if both are set, Brevo is used. Leave both blank to disable email.
+    brevo_api_key: str = ""  # https://app.brevo.com → SMTP & API → API Keys
     smtp_host: str = "smtp.gmail.com"
-    smtp_port: int = 465  # implicit TLS (SSL)
+    smtp_port: int = 465  # implicit TLS (SSL); 587 = STARTTLS
     smtp_user: str = ""
     smtp_password: str = ""
-    smtp_from_email: str = ""  # defaults to smtp_user when blank
+    smtp_from_email: str = ""  # the verified sender address; defaults to smtp_user
     smtp_from_name: str = "Awn"
 
     # ── Web push (VAPID; leave blank to disable push) ──────────────────────
@@ -55,7 +59,7 @@ class Settings(BaseSettings):
 
     @property
     def email_enabled(self) -> bool:
-        return bool(self.smtp_user and self.smtp_password)
+        return bool(self.brevo_api_key or (self.smtp_user and self.smtp_password))
 
     @property
     def push_enabled(self) -> bool:
