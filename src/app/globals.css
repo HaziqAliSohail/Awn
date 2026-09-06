@@ -1,0 +1,140 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   Base tokens + accessibility
+   ============================================================ */
+:root {
+  --canvas: #f8fafc;
+  --card: #ffffff;
+  --border: #e2e8f0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  color: #0f172a;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* Visible, consistent keyboard focus everywhere (WCAG 2.4.7). */
+@layer base {
+  :focus-visible {
+    outline: 2px solid #0d5c46;
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+}
+
+/* Respect reduced-motion preferences. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+/* ============================================================
+   Component classes consumed across the app
+   ============================================================ */
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium
+      transition-all outline-none
+      focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
+      disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-brand {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium
+      transition-all outline-none text-white
+      bg-gradient-to-br from-brand-500 to-brand-600 shadow-glow
+      hover:from-brand-600 hover:to-brand-700
+      focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
+      disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium
+      transition-all outline-none text-white bg-primary
+      hover:bg-primary-hover
+      focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2
+      disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium
+      transition-all outline-none border border-surface-300 bg-white text-surface-800
+      hover:bg-surface-50
+      focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
+      disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium
+      transition-all outline-none text-surface-600
+      hover:bg-surface-100 hover:text-surface-900
+      focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
+      disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-medium;
+  }
+  .badge-brand {
+    @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-medium
+      border border-brand-200 bg-brand-50 text-brand-700;
+  }
+  .badge-surface {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
+      border border-surface-200 bg-surface-100 text-surface-600;
+  }
+
+  .sprint-card {
+    @apply rounded-3xl border border-surface-200 bg-white p-6 shadow-glass
+      transition-all duration-300 hover:-translate-y-0.5 hover:border-surface-300 hover:shadow-glass-lg;
+  }
+  .candidate-match-card {
+    @apply transition-all duration-300;
+  }
+
+  .glass {
+    @apply border bg-white/70 backdrop-blur-xl;
+    -webkit-backdrop-filter: blur(16px);
+  }
+}
+
+/* ============================================================
+   Utility helpers
+   ============================================================ */
+@layer utilities {
+  .gradient-mesh {
+    @apply bg-gradient-mesh;
+  }
+  .text-gradient {
+    @apply bg-gradient-to-r from-brand-600 to-blue-600 bg-clip-text text-transparent;
+  }
+  .focus-ring {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2;
+  }
+  .stagger-1 {
+    animation-delay: 0.1s;
+  }
+  .stagger-2 {
+    animation-delay: 0.2s;
+  }
+  .stagger-3 {
+    animation-delay: 0.3s;
+  }
+}
