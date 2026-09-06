@@ -4,7 +4,7 @@ import re
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from ..ai_service import screen_content
+from ..ai_service import screen_chat_content
 from ..db import consume_rate_limit, is_suspended, service_insert, service_rpc, service_select_one
 from ..sanitizer import sanitize_raw_text
 from ..schemas import ChatMessage
@@ -72,8 +72,11 @@ async def send_message(body: ChatMessage, user: CurrentUser = Depends(get_curren
             status_code=422,
             detail="This message can't be sent. Please keep messages safe and free of payment solicitation or abuse.",
         )
-    verdict, _ = await screen_content(clean_body)
-    if verdict != "ok":
+    verdict, _ = await screen_chat_content(clean_body)
+    # Reviews mirror need creation: preserve normal/borderline conversation
+    # without turning a cautious model result into a false-positive block.
+    # Clear abuse remains blocked, with keyword checks above as a backstop.
+    if verdict == "reject":
         raise HTTPException(
             status_code=422,
             detail="This message can't be sent. Please reword it without harmful, abusive, or off-platform solicitation content.",
