@@ -16,6 +16,7 @@ from fastapi.responses import JSONResponse
 from .routers import (
     admin,
     handshake,
+    messages,
     match,
     notifications,
     preview,
@@ -84,6 +85,7 @@ app.include_router(preview.router, tags=["public"])
 app.include_router(sprints.router, tags=["sprints"])
 app.include_router(match.router, tags=["match"])
 app.include_router(handshake.router, tags=["handshake"])
+app.include_router(messages.router, tags=["messages"])
 app.include_router(profiles.router, tags=["profiles"])
 app.include_router(trust.router, tags=["trust"])
 app.include_router(notifications.router, tags=["notifications"])

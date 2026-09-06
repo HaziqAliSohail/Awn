@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Send, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { api, ApiError } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 interface Msg {
@@ -13,9 +14,8 @@ interface Msg {
 }
 
 /**
- * Live chat backed by Supabase Realtime. Reads and inserts go through the
- * RLS-protected `messages` table; postgres_changes delivery is RLS-scoped, so
- * only the two participants of this accepted connection receive messages.
+ * Live chat backed by Supabase Realtime. Reads and delivery are RLS-scoped;
+ * sends go through the API so every message is screened and rate-limited.
  */
 export function Chat({
   handshakeId,
@@ -34,6 +34,7 @@ export function Chat({
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [ready, setReady] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -75,10 +76,16 @@ export function Chat({
     const body = text.trim();
     if (!body || sending) return;
     setSending(true);
+    setSendError(null);
     setText("");
-    const { error } = await supabase.from("messages").insert({ handshake_id: handshakeId, sender_id: meId, body });
-    if (error) setText(body); // restore on failure
-    setSending(false);
+    try {
+      await api.post("/messages", { handshakeId, body });
+    } catch (err) {
+      setText(body); // restore rejected/failed text for a safe edit and retry
+      setSendError(err instanceof ApiError ? err.message : "Message couldn't be sent. Please try again.");
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -113,24 +120,27 @@ export function Chat({
           This help is complete — the chat is now closed. Jazāk Allāhu khayran.
         </div>
       ) : (
-        <form onSubmit={send} className="flex items-center gap-2 border-t border-surface-200 pt-3">
-          <label htmlFor="msg" className="sr-only">Message</label>
-          <input
-            id="msg"
-            value={text}
-            onChange={(e) => setText(e.target.value.slice(0, 4000))}
-            placeholder="Write a message…"
-            className="h-11 flex-1 rounded-xl border border-surface-300 bg-white px-3.5 text-sm text-surface-900 placeholder:text-surface-400 focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-primary"
-          />
-          <button
-            type="submit"
-            disabled={!text.trim() || sending}
-            className="btn-primary h-11 w-11 !px-0"
-            aria-label="Send message"
-          >
-            <Send className="h-4 w-4" aria-hidden="true" />
-          </button>
-        </form>
+        <>
+          <form onSubmit={send} className="flex items-center gap-2 border-t border-surface-200 pt-3">
+            <label htmlFor="msg" className="sr-only">Message</label>
+            <input
+              id="msg"
+              value={text}
+              onChange={(e) => setText(e.target.value.slice(0, 4000))}
+              placeholder="Write a message…"
+              className="h-11 flex-1 rounded-xl border border-surface-300 bg-white px-3.5 text-sm text-surface-900 placeholder:text-surface-400 focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-primary"
+            />
+            <button
+              type="submit"
+              disabled={!text.trim() || sending}
+              className="btn-primary h-11 w-11 !px-0"
+              aria-label="Send message"
+            >
+              <Send className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </form>
+          {sendError ? <p role="alert" className="mt-2 text-sm text-red-700">{sendError}</p> : null}
+        </>
       )}
     </>
   );

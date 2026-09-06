@@ -49,11 +49,11 @@ insert into public.profiles (
 select
   ('aaaaaaaa-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid,
   name,
-  'Community member in '||(array['Toronto','London','Birmingham','Chicago','Houston','Dearborn','Manchester','New York','Leicester','Ottawa','Bradford','Minneapolis'])[1+(n%12)],
+  'Community member in '||(array['Teaneck','Paterson','Jersey City','Newark','Passaic','Clifton','Elizabeth','Paramus','Hackensack','Wayne','Fort Lee','Bayonne','Union City','New Brunswick','Edison','Trenton'])[1+(n%16)],
   'professional',
   '{}'::text[],
   array['English'],
-  (array['Toronto','London','Birmingham','Chicago','Houston','Dearborn','Manchester','New York','Leicester','Ottawa','Bradford','Minneapolis'])[1+(n%12)],
+  (array['Teaneck','Paterson','Jersey City','Newark','Passaic','Clifton','Elizabeth','Paramus','Hackensack','Wayne','Fort Lee','Bayonne','Union City','New Brunswick','Edison','Trenton'])[1+(n%16)],
   (case n % 5
     when 0 then array['meals_food','transport_errands']::domain_category[]
     when 1 then array['home_repairs','moving_labor']::domain_category[]

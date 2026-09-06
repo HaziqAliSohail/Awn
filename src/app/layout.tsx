@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     "Awn is a Muslim community platform for mutual aid (khidmah). Ask for help or offer your skills, matched by AI, connected in trust, purely for the sake of Allah.",
   applicationName: "Awn",
   manifest: "/manifest.json",
-  icons: { icon: "/icon.svg", apple: "/icon.svg" },
+  icons: { icon: "/logo.jpeg", apple: "/logo.jpeg" },
   openGraph: {
     title: "Awn (عَوْن) · Muslim Community Mutual Aid",
     description:

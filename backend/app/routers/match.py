@@ -45,6 +45,7 @@ async def match_talent(body: MatchRequest, user: CurrentUser = Depends(get_curre
                 "p_needed_languages": sprint.get("languages_needed") or [],
                 "p_city": sprint.get("city"),
                 "p_category": sprint.get("domain"),
+                "p_requester_id": user.id,
             },
         )
     except HTTPException:
@@ -73,6 +74,13 @@ async def match_talent(body: MatchRequest, user: CurrentUser = Depends(get_curre
         match_list = []
         for p in profiles:
             if p["id"] == user.id:
+                continue
+            # The RPC normally enforces this in SQL. Its fallback must retain
+            # the same mutual-block guarantee, and fail closed on an RPC error.
+            try:
+                if await service_rpc("blocked_between", {"a": user.id, "b": p["id"]}) is True:
+                    continue
+            except HTTPException:
                 continue
             if sprint.get("required_gender") and p.get("gender") != sprint["required_gender"]:
                 continue
@@ -123,6 +131,7 @@ async def match_talent(body: MatchRequest, user: CurrentUser = Depends(get_curre
             "hoursAvailable": c["hours_available_per_week"],
             "similarity": round(c["similarity"] * 1000) / 1000,
             "hasDone": bool(c.get("has_done", False)),
+            "vouchCount": int(c.get("vouch_count") or 0),
         }
         for c in (rows or [])
         if c["id"] != user.id

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Search, Sparkles, UserCheck, Clock, MessagesSquare } from "lucide-react";
+import { Search, Sparkles, UserCheck, Clock, MessagesSquare, BadgeCheck } from "lucide-react";
 import { api, ApiError } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
@@ -16,6 +16,7 @@ interface Match {
   roleType: string;
   hoursAvailable: number;
   hasDone?: boolean;
+  vouchCount?: number;
 }
 
 export function MatchPanel({ sprintId, responseCount }: { sprintId: string; responseCount: number }) {
@@ -84,20 +85,32 @@ export function MatchPanel({ sprintId, responseCount }: { sprintId: string; resp
       {matches.length > 0 ? (
         <ul className="mt-6 grid gap-4 sm:grid-cols-2" role="list">
           {matches.map((m) => {
-            const pct = Math.round(m.similarity * 100);
             return (
               <li key={m.id} className="rounded-2xl border border-surface-200 p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="truncate font-semibold text-surface-900">{m.fullName}</p>
+                    <Link
+                      href={`/members/${m.id}`}
+                      className="truncate font-semibold text-surface-900 hover:text-primary hover:underline"
+                    >
+                      {m.fullName}
+                    </Link>
                     <p className="truncate text-sm text-surface-500">{m.headline}</p>
-                    {m.hasDone ? (
-                      <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-brand-200 bg-brand-50 px-2 py-0.5 text-[11px] font-medium text-brand-700">
-                        ✓ Has done this before
-                      </span>
-                    ) : null}
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                      {m.hasDone ? (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-brand-200 bg-brand-50 px-2 py-0.5 text-[11px] font-medium text-brand-700">
+                          ✓ Has done this before
+                        </span>
+                      ) : null}
+                      {m.vouchCount && m.vouchCount > 0 ? (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-brand-200 bg-brand-50 px-2 py-0.5 text-[11px] font-medium text-brand-700">
+                          <BadgeCheck className="h-3 w-3" aria-hidden="true" />
+                          {m.vouchCount} vouch{m.vouchCount === 1 ? "" : "es"}
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
-                  <span className="shrink-0 font-mono text-xs font-bold text-brand-600">{pct}%</span>
+                  <span className="shrink-0 rounded-full bg-brand-50 px-2 py-1 text-[11px] font-medium text-brand-700">Strong match</span>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {m.skills.slice(0, 4).map((sk) => <span key={sk} className="badge-surface text-[11px]">{sk}</span>)}

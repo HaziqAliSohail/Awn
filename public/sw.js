@@ -15,8 +15,8 @@ self.addEventListener("push", (event) => {
   const title = data.title || "Awn";
   const options = {
     body: data.body || "",
-    icon: "/icon.svg",
-    badge: "/icon.svg",
+    icon: "/logo.jpeg",
+    badge: "/logo.jpeg",
     tag: data.tag || undefined,
     data: { url: data.url || "/dashboard" },
   };

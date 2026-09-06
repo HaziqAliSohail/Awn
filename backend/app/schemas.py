@@ -104,6 +104,11 @@ class HandshakeUpdate(BaseModel):
     status: Literal["accepted", "rejected", "completed"]
 
 
+class ChatMessage(BaseModel):
+    handshakeId: str
+    body: str = Field(min_length=1, max_length=4000)
+
+
 class ProfileInput(BaseModel):
     fullName: str = Field(min_length=2, max_length=120)
     headline: str = Field(min_length=2, max_length=160)

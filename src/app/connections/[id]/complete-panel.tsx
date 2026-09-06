@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, HeartHandshake } from "lucide-react";
 import { api, ApiError } from "@/lib/api-client";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea, Label } from "@/components/ui/field";
 import { useToast } from "@/components/ui/toast";
@@ -17,12 +16,10 @@ import { useToast } from "@/components/ui/toast";
  */
 export function CompletePanel({
   handshakeId,
-  meId,
   isRequester,
   status,
 }: {
   handshakeId: string;
-  meId: string;
   isRequester: boolean;
   status: string;
 }) {
@@ -49,8 +46,7 @@ export function CompletePanel({
       // Optional thank-you goes into the chat first, so the helper sees the shukr.
       const shukr = note.trim();
       if (shukr) {
-        const supabase = createClient();
-        await supabase.from("messages").insert({ handshake_id: handshakeId, sender_id: meId, body: shukr });
+        await api.post("/messages", { handshakeId, body: shukr });
       }
       await api.patch("/handshake", { handshakeId, status: "completed" });
       toast({ variant: "success", title: "Marked as completed", description: "Jazāk Allāhu khayran for helping one another." });

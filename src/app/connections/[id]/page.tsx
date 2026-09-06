@@ -44,7 +44,9 @@ export default async function ConnectionChatPage({ params }: { params: { id: str
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           </Link>
           <div className="min-w-0 flex-1">
-            <p className="truncate font-semibold text-surface-900">{otherName}</p>
+            <Link href={`/members/${otherId}`} className="block truncate font-semibold text-surface-900 hover:text-primary hover:underline">
+              {otherName}
+            </Link>
             <Link href={`/sprints/${sprint.id}`} className="block truncate text-xs text-surface-500 hover:text-surface-800">
               {sprint.title}
             </Link>
@@ -58,7 +60,6 @@ export default async function ConnectionChatPage({ params }: { params: { id: str
           />
           <CompletePanel
             handshakeId={hs.id}
-            meId={user.id}
             isRequester={sprint.creator_id === user.id}
             status={hs.status as string}
           />
