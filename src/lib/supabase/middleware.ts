@@ -9,7 +9,7 @@ import { NextResponse, type NextRequest } from "next/server";
  * Ref: https://supabase.com/docs/guides/auth/server-side/nextjs
  */
 
-const PROTECTED_PREFIXES = ["/dashboard", "/onboarding", "/sprints", "/connections", "/admin"];
+const PROTECTED_PREFIXES = ["/dashboard", "/onboarding", "/sprints", "/connections", "/admin", "/notifications"];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });

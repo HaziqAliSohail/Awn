@@ -43,7 +43,9 @@ app = FastAPI(title="Awn API", version="0.1.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_origins(),
-    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
+    # localhost (any port) for dev, plus this app's Vercel production and
+    # preview deployments (tryawn.vercel.app and tryawn-<hash>.vercel.app).
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?|https://tryawn[a-z0-9-]*\.vercel\.app",
     allow_credentials=False,  # bearer tokens, not cookies
     allow_methods=["*"],
     allow_headers=["*"],
