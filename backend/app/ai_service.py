@@ -59,11 +59,15 @@ _SPRINT_TOOL = {
         "type": "object",
         "additionalProperties": False,
         "properties": {
+            # The Anthropic tools API rejects JSON-schema validation keywords
+            # like minItems/maxItems/minimum/maximum on tool inputs, so bounds
+            # live in the descriptions (and the system prompt) instead; the
+            # SprintOutput model does the actual enforcement after parsing.
             "title": {"type": "string", "description": "Warm, plain title, 3-100 chars"},
             "domain": {"type": "string", "enum": _DOMAINS},
-            "deliverables": {"type": "array", "items": {"type": "string"}, "minItems": 1, "maxItems": 4},
-            "estimatedHours": {"type": "integer", "minimum": 1, "maximum": 40},
-            "prerequisites": {"type": "array", "items": {"type": "string"}, "maxItems": 6},
+            "deliverables": {"type": "array", "items": {"type": "string"}, "description": "1-4 concrete items"},
+            "estimatedHours": {"type": "integer", "description": "Rough total effort, 1-40"},
+            "prerequisites": {"type": "array", "items": {"type": "string"}, "description": "0-6 helpful skills; may be empty"},
         },
         "required": ["title", "domain", "deliverables", "estimatedHours", "prerequisites"],
     },
