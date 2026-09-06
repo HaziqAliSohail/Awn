@@ -12,6 +12,7 @@ push are handed to a FastAPI BackgroundTask so their latency is off the request
 path.
 """
 
+import html
 import json
 import logging
 
@@ -74,24 +75,75 @@ async def _recipient(user_id: str) -> dict:
 
 
 def _email_html(title: str, body: str | None, url: str) -> str:
-    safe_body = f'<p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.6">{body}</p>' if body else ""
-    return f"""\
-<!doctype html><html><body style="margin:0;background:#f6f7f5;padding:24px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
-    <table role="presentation" width="100%" style="max-width:480px;background:#fff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden">
-      <tr><td style="padding:20px 28px;border-bottom:1px solid #f1f5f9">
-        <span style="display:inline-block;width:28px;height:28px;line-height:28px;text-align:center;background:#0d5c46;color:#fff;border-radius:8px;font-weight:700">&#1593;</span>
-        <span style="font-size:18px;font-weight:700;color:#0f172a;vertical-align:middle;margin-left:8px">Awn</span>
-      </td></tr>
-      <tr><td style="padding:28px">
-        <h1 style="margin:0 0 12px;font-size:18px;color:#0f172a">{title}</h1>
-        {safe_body}
-        <a href="{url}" style="display:inline-block;background:#0d5c46;color:#fff;text-decoration:none;padding:11px 20px;border-radius:10px;font-size:14px;font-weight:600">Open Awn</a>
-        <p style="margin:24px 0 0;color:#94a3b8;font-size:12px">You're receiving this because you're part of the Awn community. Jaz&#257;k All&#257;hu khayran.</p>
-      </td></tr>
-    </table>
-  </td></tr></table>
-</body></html>"""
+    """Branded notification email — unified with the Awn magic-link template
+    (same card, header, button, footer). Only the heading, body, button target,
+    and footer copy differ by notification type."""
+    safe_title = html.escape(title, quote=False)
+    safe_body = (
+        f'<p style="margin:0; font-size:15px; color:#64748b; line-height:1.6;">{html.escape(body, quote=False)}</p>'
+        if body
+        else ""
+    )
+    return f"""<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0; padding:0; background-color:#f1f5f9; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f1f5f9; padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="480" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:24px; border:1px solid #e2e8f0; overflow:hidden; box-shadow:0 8px 32px rgba(0,0,0,0.08);">
+          <!-- Header -->
+          <tr>
+            <td style="padding:36px 40px 24px;">
+              <table cellpadding="0" cellspacing="0"><tr>
+                <td style="width:40px; height:40px; background-color:#0d5c46; border-radius:12px; text-align:center; vertical-align:middle;">
+                  <span style="font-size:18px; font-weight:bold; color:#ffffff;">ع</span>
+                </td>
+                <td style="padding-left:10px;">
+                  <span style="font-size:20px; font-weight:bold; color:#0f172a; letter-spacing:-0.3px;">Awn</span>
+                  <span style="font-size:13px; color:#94a3b8; margin-left:6px;">عَوْن</span>
+                </td>
+              </tr></table>
+            </td>
+          </tr>
+          <!-- Body -->
+          <tr>
+            <td style="padding:0 40px 16px;">
+              <h2 style="margin:0 0 12px; font-size:20px; color:#0f172a; font-weight:700;">{safe_title}</h2>
+              {safe_body}
+            </td>
+          </tr>
+          <!-- CTA Button -->
+          <tr>
+            <td align="center" style="padding:16px 40px 32px;">
+              <a href="{url}" style="display:inline-block; padding:14px 36px; background-color:#0d5c46; color:#ffffff; font-size:15px; font-weight:600; text-decoration:none; border-radius:12px; letter-spacing:0.3px;">
+                Open Awn
+              </a>
+            </td>
+          </tr>
+          <!-- Divider -->
+          <tr>
+            <td style="padding:0 40px;">
+              <hr style="border:none; border-top:1px solid #e2e8f0; margin:0;">
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding:24px 40px 32px;">
+              <p style="margin:0; font-size:12px; color:#94a3b8; line-height:1.5;">
+                You're part of the Awn community — helping one another for the sake of Allah. Jazāk Allāhu khayran.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
 
 
 async def _send_email(to: str, subject: str, html: str) -> None:
